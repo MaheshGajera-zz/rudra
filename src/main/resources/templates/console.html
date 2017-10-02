@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+    <head>
+        <title>Media Management Console</title>
+        <style type="text/css">
+			* {
+			    box-sizing: border-box;
+			}
+			.headingText {
+				font-size: 20px;
+				color: cadetblue;
+			}
+			.userInfo {
+				text-align: end;
+			}
+			.headerTitle {
+				text-align: center;
+				font-size: 30px;
+			}
+			.footer {
+				text-align: center;
+			}
+			.col-50 {
+				width: 50%;
+			}
+			.col-100 {
+				width: 100%;
+			}
+			.oneColRaw {
+				width: 100%;
+				border-bottom: 1px solid deepskyblue;
+				float: left;
+				padding: 15px 10px 0px;
+			}
+			[class*="col-"] {
+			    float: left;
+			    padding: 15px;
+			}
+			.row::after {
+			    content: "";
+			    clear: both;
+			    display: table;
+			}
+			html {
+			    font-family: "Lucida Sans", sans-serif;
+			}
+			.header {
+			    background-color: #9933cc;
+			    color: #ffffff;
+			    padding: 15px;
+			}
+			.successMsg {
+				color: green;
+				text-align: center;
+    			padding-top: 25px;
+			}
+			.failedMsg {
+				color: red;
+				text-align: center;
+    			padding-top: 25px;
+			}
+			.deleteLink {
+				color: red;
+			}
+        </style>
+    </head>
+    <body>
+    	<div class="header">
+	  		<div class="userInfo">    
+				<form th:action="@{/logout}" method="post">
+	            	<span th:inline="text">Hello [[${#httpServletRequest.remoteUser}]]!</span>
+			        <input type="submit" value="Sign Out"/>
+		        </form>
+	        </div>
+	  		<div class="headerTitle"><strong>Media Management Console</strong></div>
+	  	</div>
+        <div class="main">
+	        <div th:if="${message}" th:class="${msgType}">
+				<strong th:text="${message}"></strong>
+				<hr/>
+			</div>
+			<div class="raw">
+			    <div class="oneColRaw">
+			    	<strong class="headingText">Groups</strong>
+					<br/><br/>
+			    </div>
+		    </div>
+		    <div class="raw">
+		        <div class="col-50">
+					<form method="POST" action="/createGroup">
+						<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+						<table>
+							<tr>
+								<td><strong>Data Store:</strong></td>
+								<td>
+									<select name="dateStore">
+										<option value="viralmedia">Viral Media</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td><strong>Group Type:</strong></td>
+								<td>
+									<select name="parentGroup">
+										<option value="Home">Home</option>
+										<option value="Other">Other</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td><strong>New Group:</strong></td>
+								<td><input type="text" name="newGroupName" /></td>
+							</tr>
+							<tr><td></td><td><input type="submit" value="Create" /></td></tr>
+						</table>
+					</form>
+		        </div>
+		        <div class="col-50">
+			    	<ul>
+						<li th:each="group : ${otherGroups}">
+							<strong th:text="${group.groupName}"/>
+							-
+							<a th:href="${'/removeGroup?groupPath=' + group.groupPath}" th:text="Delete" class="deleteLink"/>
+						</li>
+						<li th:each="group : ${homeGroups}">
+							Home > <strong th:text="${group.groupName}"/>
+							-
+							<a th:href="${'/removeGroup?groupPath=' + group.groupPath}" th:text="Delete" class="deleteLink"/>
+						</li>
+					</ul>
+		        </div>
+	        </div>
+	        <div class="raw">
+			    <div class="oneColRaw">
+			    	<strong class="headingText">Files</strong>
+					<br/><br/>
+			    </div>
+		    </div>
+			<div class="raw">
+				<div class="col-50">
+					<form method="POST" enctype="multipart/form-data" action="/uploadFile">
+						<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+						<table>
+							<tr>
+								<td><strong>File Group:</strong></td>
+								<td>
+									<select name="filePath">
+										<option th:each="group : ${otherGroups}" th:value="${group.groupPath}" th:text="${group.groupName}"/>
+										<option th:each="group : ${homeGroups}" th:value="${group.groupPath}" th:text="${'Home > ' + group.groupName}"/>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td><strong>File to upload:</strong></td>
+								<td><input type="file" name="file" /></td>
+							</tr>
+							<tr><td></td><td><input type="submit" value="Upload" /></td></tr>
+						</table>
+					</form>
+				</div>
+				<div class="col-50">
+				    <div>
+				    	<ul th:each="group : ${otherGroups}">
+							<li th:each="mediaFile : ${group.mediaDataList}">
+								<a th:href="${mediaFile.url}" th:text="${group.groupName + ' > ' + mediaFile.name}" target="_blank"/>
+								-
+								<a th:href="${'/removeFile/' + mediaFile.name + '?filePath=' + group.groupPath}" th:text="Delete" class="deleteLink"/>
+							</li>
+						</ul>
+						<ul th:each="group : ${homeGroups}">
+							<li th:each="mediaFile : ${group.mediaDataList}">
+								<a th:href="${mediaFile.url}" th:text="${'Home > ' + group.groupName + ' > ' + mediaFile.name}" target="_blank"/>
+								-
+								<a th:href="${'/removeFile/' + mediaFile.name + '?filePath=' + group.groupPath}" th:text="Delete" class="deleteLink"/>
+							</li>
+						</ul>
+					</div>
+		        </div>
+	        </div>
+	        <div class="raw">
+			    <div class="oneColRaw">
+			    	<strong class="headingText">API Endpoints</strong>
+					<br/><br/>
+			    </div>
+		    </div>
+	        <div class="raw">
+	        	<div class="col-100">
+				    <div>
+				    	<ul>
+				    		<li>
+								<a href="/api/viralmedia" target="_blank">Group List</a>
+							</li>
+							<li>
+								<a href="/api/viralmedia/home" target="_blank">Home</a>
+							</li>
+						</ul>
+				    	<ul>
+							<li th:each="group : ${otherGroups}">
+								<a th:href="${'/api/viralmedia/other/' + #strings.replace(group.groupName,' ','-')}" th:text="${group.groupName}" target="_blank"/>
+							</li>
+						</ul>
+					</div>
+		        </div>
+	        </div>
+        </div>
+        <div class="footer">
+        	<hr/><h4>Thank You!</h4>
+        </div>
+	</body>
+</html>
