@@ -4,18 +4,21 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import rudra.model.ResourceGroupDTO;
 
 public interface ResourceStore {
 
-	List<String> loadClientNames();
+    List<String> loadClientNames();
 
-	List<String> loadMainResourceGroupNames( String clientName );
+    List<String> loadMainResourceGroupNames(String clientName);
 
-	Collection<ResourceGroupDTO> loadSubResourceGroups( String clientName, String mainGroupName );
+    Collection<ResourceGroupDTO> loadSubResourceGroups(String clientName, String mainGroupName);
 
-	ResourceGroupDTO loadResourceGroup( String clientName, String groupName );
+    ResourceGroupDTO loadResourceGroup(String clientName, String groupName);
 
-	void loadResource( OutputStream out, String clientName, String resourceKey ) throws IOException;
+    void loadResource(OutputStream out, String clientName, String resourceKey) throws IOException;
+
+    Set<String> loadThumbnails(String bucketName);
 }
