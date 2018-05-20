@@ -1,8 +1,10 @@
 package rudra.cron;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -31,7 +33,7 @@ public class ThumbnailGenerator {
 
     private static final String DELIMITER = "/";
 
-    private static final String TEMP_STORAGE_DIR = "/home/mahesh/Desktop/Test/";
+    private static final String TEMP_STORAGE_DIR = "/tmp/";
 
     private static final String THUMBNAIL_GROUP = "Thumbnail";
 
@@ -116,6 +118,9 @@ public class ThumbnailGenerator {
             amazonFileUploadLocationOriginal, fileName, stream, objectMetadata )
             .withCannedAcl( CannedAccessControlList.PublicRead );
         PutObjectResult s3result = amazonS3.putObject( putObjectRequest );
+        
+        File file = new File( filePath );
+        Files.deleteIfExists( file.toPath() );
     }
 
 }
