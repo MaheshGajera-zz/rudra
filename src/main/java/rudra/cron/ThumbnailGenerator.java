@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -37,6 +39,8 @@ public class ThumbnailGenerator {
 
     private static final String THUMBNAIL_GROUP = "Thumbnail";
 
+    private static final List<String> GROUPS = Arrays.asList( "Videos", "Movies" );
+
     @Autowired
     private AwsS3Store awsS3Store;
 
@@ -60,29 +64,30 @@ public class ThumbnailGenerator {
     private void generateForBucket( String bucketName ) {
         Set<String> thumbnails = awsS3Store.loadThumbnails( bucketName );
 
-        String groupName = "Videos";
-        ListObjectsRequest listObjectRequest = new ListObjectsRequest().withBucketName( bucketName )
-            .withPrefix( groupName );
-
-        ObjectListing objectListing = amazonS3.listObjects( listObjectRequest );
-
-        for ( S3ObjectSummary objectSummary : objectListing.getObjectSummaries() ) {
-            logger.debug( objectSummary.getKey() );
-
-            String revisedKey = objectSummary.getKey().replace( groupName + DELIMITER, "" );
-            if ( revisedKey.isEmpty() || revisedKey.endsWith( DELIMITER ) )
-                continue;
-
-            if ( thumbnails.contains( objectSummary.getETag() ) ) {
-                logger.debug( "Already generated for " + objectSummary.getETag() );
-                continue;
-            }
-
-            try {
-                createAndUploadThumbnail( objectSummary, groupName );
-            }
-            catch ( IOException | InterruptedException e ) {
-                logger.error( "Thumbnail generation failed for " + objectSummary.getKey(), e );
+        for ( String groupName : GROUPS ) {
+            ListObjectsRequest listObjectRequest = new ListObjectsRequest().withBucketName( bucketName )
+                .withPrefix( groupName );
+    
+            ObjectListing objectListing = amazonS3.listObjects( listObjectRequest );
+    
+            for ( S3ObjectSummary objectSummary : objectListing.getObjectSummaries() ) {
+                logger.debug( objectSummary.getKey() );
+    
+                String revisedKey = objectSummary.getKey().replace( groupName + DELIMITER, "" );
+                if ( revisedKey.isEmpty() || revisedKey.endsWith( DELIMITER ) )
+                    continue;
+    
+                if ( thumbnails.contains( objectSummary.getETag() ) ) {
+                    logger.debug( "Already generated for " + objectSummary.getETag() );
+                    continue;
+                }
+    
+                try {
+                    createAndUploadThumbnail( objectSummary, groupName );
+                }
+                catch ( IOException | InterruptedException e ) {
+                    logger.error( "Thumbnail generation failed for " + objectSummary.getKey(), e );
+                }
             }
         }
     }

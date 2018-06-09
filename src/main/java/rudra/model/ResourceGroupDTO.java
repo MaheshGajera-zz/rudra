@@ -1,13 +1,19 @@
 package rudra.model;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class ResourceGroupDTO {
 
 	private String groupName;
 
 	private String groupPath;
+	
+	@JsonIgnore
+	private Date lastModified;
 	
 	private List<ResourceDTO> mediaDataList = new ArrayList<>();
 
@@ -36,7 +42,15 @@ public class ResourceGroupDTO {
 		this.mediaDataList = mediaDataList;
 	}
 	
-	public void addMediaData( ResourceDTO mediaData ) {
+	public Date getLastModified() {
+        return lastModified;
+    }
+
+    public void setLastModified(Date lastModified) {
+        this.lastModified = lastModified;
+    }
+
+    public void addMediaData( ResourceDTO mediaData ) {
 		if ( mediaData == null ) return;
 		
 		mediaDataList.add( mediaData );

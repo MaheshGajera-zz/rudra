@@ -4,12 +4,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +32,8 @@ import rudra.service.ResourceStore;
 
 @Service
 public class AwsS3Store implements ResourceStore {
+
+    private static final Logger logger = LoggerFactory.getLogger( AwsS3Store.class );
 
     private static final String DELIMITER = "/";
 
@@ -76,7 +82,10 @@ public class AwsS3Store implements ResourceStore {
         ObjectListing objectListing = amazonS3.listObjects( listObjectRequest );
         Map<String, ResourceGroupDTO> mediaGroupList = new HashMap<>();
 
-        for ( S3ObjectSummary objectSummary : objectListing.getObjectSummaries() ) {
+        List<S3ObjectSummary> objectSummaries = objectListing.getObjectSummaries();
+        objectSummaries.sort( Comparator.comparing( S3ObjectSummary::getLastModified ).reversed() );
+
+        for ( S3ObjectSummary objectSummary : objectSummaries ) {
             String revisedKey = objectSummary.getKey().replace( parentGroupName + DELIMITER, "" );
 
             if ( revisedKey.isEmpty() )
@@ -88,12 +97,13 @@ public class AwsS3Store implements ResourceStore {
                     ResourceGroupDTO mediaGroup = new ResourceGroupDTO();
                     mediaGroup.setGroupName( subGroupName );
                     mediaGroup.setGroupPath( objectSummary.getKey() );
+                    mediaGroup.setLastModified( objectSummary.getLastModified() );
                     mediaGroupList.put( subGroupName, mediaGroup );
                 }
             }
         }
 
-        for ( S3ObjectSummary objectSummary : objectListing.getObjectSummaries() ) {
+        for ( S3ObjectSummary objectSummary : objectSummaries ) {
             String revisedKey = objectSummary.getKey().replace( parentGroupName + DELIMITER, "" );
             if ( revisedKey.isEmpty() || revisedKey.endsWith( DELIMITER ) )
                 continue;
@@ -107,7 +117,9 @@ public class AwsS3Store implements ResourceStore {
             }
         }
 
-        return mediaGroupList.values();
+        return mediaGroupList.values().stream()
+            .sorted( Comparator.comparing( ResourceGroupDTO::getLastModified ).reversed() )
+            .collect( Collectors.toList() );
     }
 
     @Override
@@ -116,12 +128,14 @@ public class AwsS3Store implements ResourceStore {
             .withPrefix( groupName );
 
         ObjectListing objectListing = amazonS3.listObjects( listObjectRequest );
+        List<S3ObjectSummary> objectSummaries = objectListing.getObjectSummaries();
+        objectSummaries.sort( Comparator.comparing( S3ObjectSummary::getLastModified ).reversed() );
+
         ResourceGroupDTO mediaGroup = new ResourceGroupDTO();
         mediaGroup.setGroupName( groupName );
 
         Set<String> thumbnails = loadThumbnails( bucketName );
-
-        for ( S3ObjectSummary objectSummary : objectListing.getObjectSummaries() ) {
+        for ( S3ObjectSummary objectSummary : objectSummaries ) {
             String revisedKey = objectSummary.getKey().replace( groupName + DELIMITER, "" );
             if ( revisedKey.isEmpty() ) {
                 mediaGroup.setGroupPath( objectSummary.getKey() );
@@ -174,9 +188,11 @@ public class AwsS3Store implements ResourceStore {
             .withPrefix( THUMBNAIL_GROUP );
         
         ObjectListing objectListing = amazonS3.listObjects( listObjectRequest );
+        List<S3ObjectSummary> objectSummaries = objectListing.getObjectSummaries();
+        objectSummaries.sort( Comparator.comparing( S3ObjectSummary::getLastModified ).reversed() );
 
         Set<String> thumbnails = new HashSet<>();
-        for ( S3ObjectSummary objectSummary : objectListing.getObjectSummaries() ) {
+        for ( S3ObjectSummary objectSummary : objectSummaries ) {
             String revisedKey = objectSummary.getKey().replace( THUMBNAIL_GROUP + DELIMITER, "" );
             if ( revisedKey.isEmpty() || revisedKey.endsWith( DELIMITER ) ) continue;
 
